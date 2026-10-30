@@ -24,6 +24,7 @@ migrate_working_dir/
 #.vscode/
 
 # Flutter/Dart/Pub related
+.metadata
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
@@ -32,6 +33,12 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+
+# Desktop & Web (mobile only project)
+/linux/
+/macos/
+/windows/
+/web/
 
 # Symbolication related
 app.*.symbols
