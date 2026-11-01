@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/saas_config.dart';
+import '../../models/seller_profile.dart';
 import '../../modules/storage/storage_service.dart';
 import '../../services/google_auth_service.dart';
+import '../../services/saas_auth_service.dart';
 import '../../services/upload_queue_service.dart';
 import '../history/history_screen.dart';
 import '../queue/upload_queue_screen.dart';
@@ -17,6 +20,7 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final saasAuth = context.watch<SaasAuthService>();
     final authService = context.watch<GoogleAuthService>();
     final uploadQueue = context.watch<UploadQueueService>();
 
@@ -29,8 +33,8 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -53,6 +57,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              const _SectionLabel(label: 'MEMBERSHIP & SUBSCRIPTION'),
+              const SizedBox(height: 10),
+              _MembershipCard(seller: saasAuth.currentSeller),
+              const SizedBox(height: 22),
               const _SectionLabel(label: 'CLOUD STORAGE'),
               const SizedBox(height: 10),
               _DriveCard(
@@ -129,7 +137,7 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
               Center(
                 child: Text(
                   'PackProof v1.0.0',
@@ -140,7 +148,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -625,6 +633,215 @@ class _NavItem extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MembershipCard extends StatelessWidget {
+  final SellerProfile? seller;
+
+  const _MembershipCard({required this.seller});
+
+  static const Color _card = Colors.white;
+  static const Color _border = Color(0xFFE5E7EB);
+  static const Color _textDark = Color(0xFF111827);
+  static const Color _textMuted = Color(0xFF6B7280);
+
+  @override
+  Widget build(BuildContext context) {
+    if (seller == null) return const SizedBox.shrink();
+
+    final isExpired = seller!.isExpired;
+    final isQuotaReached = seller!.isQuotaReached;
+    final days = seller!.daysRemaining;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.verified_user_outlined,
+                  color: Color(0xFF16A34A),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      seller!.sellerName.isNotEmpty
+                          ? seller!.sellerName
+                          : 'Valued Seller',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      seller!.email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: _textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isExpired
+                      ? const Color(0xFFFEE2E2)
+                      : const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  seller!.plan.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: isExpired
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFF0284C7),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: _border),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Subscription Status',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isExpired ? 'Expired' : '$days Days Remaining',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isExpired ? Colors.redAccent : _textDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Monthly Usage',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      seller!.isUnlimited
+                          ? '${seller!.videosThisMonth} Orders'
+                          : '${seller!.videosThisMonth} / ${seller!.monthlyQuota}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isQuotaReached ? Colors.redAccent : _textDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!seller!.isUnlimited) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (seller!.videosThisMonth / seller!.monthlyQuota)
+                    .clamp(0.0, 1.0),
+                backgroundColor: const Color(0xFFF3F4F6),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isQuotaReached
+                      ? Colors.redAccent
+                      : isExpired
+                          ? Colors.orangeAccent
+                          : const Color(0xFF16A34A),
+                ),
+                minHeight: 6,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => SaasConfig.contactOwnerViaWhatsApp(
+                    customMessage:
+                        'Hi Danish! I would like to renew / upgrade my PackProof membership (${seller!.email}).',
+                  ),
+                  icon: const Icon(Icons.chat, size: 16),
+                  label: const Text('Renew / Upgrade'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF16A34A),
+                    side: const BorderSide(color: Color(0xFF16A34A)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: () => context.read<SaasAuthService>().logout(),
+                icon: const Icon(Icons.logout, size: 16),
+                label: const Text('Sign Out'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _textMuted,
+                  side: const BorderSide(color: _border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

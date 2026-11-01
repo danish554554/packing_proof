@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'controllers/recording_controller.dart';
+import 'core/saas_config.dart';
+import 'modules/auth/auth_gate.dart';
 import 'services/google_auth_service.dart';
 import 'services/google_drive_service.dart';
+import 'services/saas_auth_service.dart';
 import 'services/upload_queue_service.dart';
-import 'ui/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (SaasConfig.isConfigured) {
+    try {
+      // ignore: deprecated_member_use
+      await Supabase.initialize(
+        url: SaasConfig.supabaseUrl,
+        // ignore: deprecated_member_use
+        anonKey: SaasConfig.supabaseAnonKey,
+      );
+    } catch (e) {
+      debugPrint('Supabase initialization error: $e');
+    }
+  }
+
   runApp(const MyApp());
 }
 
@@ -19,6 +36,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<SaasAuthService>(
+          create: (context) => SaasAuthService()..init(),
+        ),
         ChangeNotifierProvider(
           create: (context) => RecordingController(),
         ),
@@ -89,7 +109,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const HomeScreen(),
+        home: const AuthGate(),
       ),
     );
   }

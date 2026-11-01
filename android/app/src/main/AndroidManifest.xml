@@ -5,7 +5,7 @@
     
    
     <application
-        android:label="packproof_app"
+        android:label="PackProof"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

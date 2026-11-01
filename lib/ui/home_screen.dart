@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/recording_controller.dart';
+import '../core/saas_config.dart';
+import '../models/seller_profile.dart';
 import '../modules/history/history_screen.dart';
 import '../modules/queue/upload_queue_screen.dart';
 import '../modules/recording/recording_screen.dart';
 import '../modules/scanner/scanner_screen.dart';
 import '../modules/settings/settings_screen.dart';
+import '../services/saas_auth_service.dart';
 import '../services/upload_queue_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,17 +42,114 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Whenever app is resumed from background or reopened, resume any pending uploads!
+      // Whenever app is resumed from background or reopened, resume any pending uploads and refresh license!
       if (mounted) {
         context.read<UploadQueueService>().resumeQueue();
+        context.read<SaasAuthService>().refreshStatus();
       }
     }
+  }
+
+  void _showLicenseDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String buttonText,
+    required String whatsappMsg,
+  }) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.lock_clock_outlined, color: _primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14, color: _textDark, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel', style: TextStyle(color: _textMuted)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              SaasConfig.contactOwnerViaWhatsApp(customMessage: whatsappMsg);
+            },
+            icon: const Icon(Icons.chat, size: 18),
+            label: Text(buttonText),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _startFlow(
     BuildContext context, {
     required RecordingFlowType flowType,
   }) async {
+    final saasAuth = context.read<SaasAuthService>();
+    final seller = saasAuth.currentSeller;
+
+    if (seller != null) {
+      if (!seller.isActive) {
+        _showLicenseDialog(
+          context,
+          title: 'Account Deactivated',
+          message:
+              'Your seller account has been deactivated by the administrator. Please contact the owner to reactivate.',
+          buttonText: 'Contact on WhatsApp',
+          whatsappMsg:
+              'Hi Danish! My account (${seller.email}) is marked as deactivated. Please reactivate my membership.',
+        );
+        return;
+      }
+
+      if (seller.isExpired) {
+        _showLicenseDialog(
+          context,
+          title: '30-Day Membership Expired',
+          message:
+              'Your monthly subscription ended on ${seller.expiresAt.day}/${seller.expiresAt.month}/${seller.expiresAt.year}. Please pay your renewal fee to continue recording packing proofs.',
+          buttonText: 'Pay & Renew on WhatsApp',
+          whatsappMsg:
+              'Hi Danish! My 30-day membership for ${seller.email} has expired. I want to pay the monthly fee to renew.',
+        );
+        return;
+      }
+
+      if (seller.isQuotaReached) {
+        _showLicenseDialog(
+          context,
+          title: 'Monthly Order Limit Reached',
+          message:
+              'You have recorded all ${seller.monthlyQuota} orders allowed in your ${seller.planDisplayName} plan this month. Please upgrade your plan to record more.',
+          buttonText: 'Upgrade on WhatsApp',
+          whatsappMsg:
+              'Hi Danish! I reached my monthly limit (${seller.videosThisMonth}/${seller.monthlyQuota} orders) on ${seller.email}. I want to upgrade my plan.',
+        );
+        return;
+      }
+    }
+
     final isReturn = flowType == RecordingFlowType.returnRecording;
     final scannedOrderId = await Navigator.push<String>(
       context,
@@ -96,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final saasAuth = context.watch<SaasAuthService>();
     final uploadQueue = context.watch<UploadQueueService>();
 
     final today = uploadQueue.todayCompletedCount;
@@ -132,7 +233,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   height: 1.1,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
+              _SaaSMembershipBanner(seller: saasAuth.currentSeller),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -669,6 +772,125 @@ class _NavItem extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SaaSMembershipBanner extends StatelessWidget {
+  final SellerProfile? seller;
+
+  const _SaaSMembershipBanner({this.seller});
+
+  @override
+  Widget build(BuildContext context) {
+    if (seller == null) return const SizedBox.shrink();
+
+    final isExpired = seller!.isExpired;
+    final isQuotaReached = seller!.isQuotaReached;
+    final hasWarning = isExpired || isQuotaReached;
+
+    final bgColor = hasWarning ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4);
+    final borderColor = hasWarning ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0);
+    final primaryTextColor = hasWarning ? const Color(0xFF991B1B) : const Color(0xFF166534);
+
+    final days = seller!.daysRemaining;
+    final statusText = isExpired
+        ? 'Membership Expired'
+        : isQuotaReached
+            ? 'Monthly Quota Full'
+            : '$days days left';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: hasWarning ? const Color(0xFFEF4444) : const Color(0xFF16A34A),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  seller!.plan.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: primaryTextColor,
+                  ),
+                ),
+              ),
+              if (hasWarning)
+                InkWell(
+                  onTap: () => SaasConfig.contactOwnerViaWhatsApp(
+                    customMessage:
+                        'Hi Danish! I need to renew / upgrade my PackProof subscription (${seller!.email}).',
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Renew',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  seller!.isUnlimited
+                      ? '${seller!.videosThisMonth} orders'
+                      : '${seller!.videosThisMonth}/${seller!.monthlyQuota} orders',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: primaryTextColor,
+                  ),
+                ),
+            ],
+          ),
+          if (!seller!.isUnlimited && !isExpired) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (seller!.videosThisMonth / seller!.monthlyQuota).clamp(0.0, 1.0),
+                backgroundColor: hasWarning
+                    ? const Color(0xFFFCA5A5)
+                    : const Color(0xFFDCFCE7),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  hasWarning ? const Color(0xFFEF4444) : const Color(0xFF16A34A),
+                ),
+                minHeight: 4,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

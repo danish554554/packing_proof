@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/recording_controller.dart';
 import '../../services/google_drive_service.dart';
+import '../../services/saas_auth_service.dart';
 import '../../services/upload_queue_service.dart';
 import '../history/history_service.dart';
 
@@ -159,6 +160,15 @@ class _RecordingScreenState extends State<RecordingScreen> {
         flowType: flowType,
         targetDriveFolderId: targetDriveFolderId,
       );
+
+      if (mounted) {
+        context.read<SaasAuthService>().recordVideoUsage(
+              trackingNumber: orderId,
+              orderType: flowType == RecordingFlowType.returnRecording
+                  ? 'return'
+                  : 'packing',
+            );
+      }
 
       recordingController.reset();
 

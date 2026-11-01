@@ -50,3 +50,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Keystore & credentials
+*.jks
+*.keystore
+**/android/key.properties
+
+
+*.apk
+
