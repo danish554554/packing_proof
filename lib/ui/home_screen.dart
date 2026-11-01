@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               const Text(
                 'PACKPROOF',
                 style: TextStyle(
@@ -223,19 +223,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   color: _textMuted,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               const Text(
                 'Ready to Pack',
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: _textDark,
                   height: 1.1,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _SaaSMembershipBanner(seller: saasAuth.currentSeller),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       onTap: () => _openQueue(context, filter: QueueFilter.done),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _StatCard(
                       icon: Icons.cloud_upload_outlined,
@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       onTap: () => _openQueue(context, filter: QueueFilter.active),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _StatCard(
                       icon: Icons.schedule_outlined,
@@ -266,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       onTap: () => _openQueue(context, filter: QueueFilter.pending),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _StatCard(
                       icon: Icons.error_outline,
@@ -279,14 +279,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ],
               ),
               if (uploading > 0 || pending > 0) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _ActiveUploadBanner(
                   uploadingCount: uploading,
                   pendingCount: pending,
                   onTap: () => _openQueue(context, filter: QueueFilter.all),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               const Text(
                 'RECENT UPLOADS',
                 style: TextStyle(
@@ -296,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   color: _textMuted,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -318,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       label: const Text(
                         'Record Packing',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -339,14 +339,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         backgroundColor: _primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        minimumSize: const Size.fromHeight(58),
+                        minimumSize: const Size.fromHeight(52),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _startFlow(
@@ -357,23 +357,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       label: const Text(
                         'Record Return',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _primary,
                         side: const BorderSide(color: _primary),
-                        minimumSize: const Size.fromHeight(58),
+                        minimumSize: const Size.fromHeight(52),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -628,44 +628,46 @@ class _EmptyUploadsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(18),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.cloud_upload_outlined,
+                  size: 22,
+                  color: _textMuted,
+                ),
               ),
-              child: const Icon(
-                Icons.cloud_upload_outlined,
-                size: 28,
-                color: _textMuted,
+              const SizedBox(height: 8),
+              const Text(
+                'No uploads yet today',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _textDark,
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'No uploads yet today',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: _textDark,
+              const SizedBox(height: 3),
+              const Text(
+                'Recorded videos will appear here after upload.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _textMuted,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Recorded packing and return videos will appear here after upload.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: _textMuted,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -782,6 +784,9 @@ class _SaaSMembershipBanner extends StatelessWidget {
 
   const _SaaSMembershipBanner({this.seller});
 
+  static const Color _border = Color(0xFFE5E7EB);
+  static const Color _textDark = Color(0xFF111827);
+
   @override
   Widget build(BuildContext context) {
     if (seller == null) return const SizedBox.shrink();
@@ -789,107 +794,82 @@ class _SaaSMembershipBanner extends StatelessWidget {
     final isExpired = seller!.isExpired;
     final isQuotaReached = seller!.isQuotaReached;
     final hasWarning = isExpired || isQuotaReached;
-
-    final bgColor = hasWarning ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4);
-    final borderColor = hasWarning ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0);
-    final primaryTextColor = hasWarning ? const Color(0xFF991B1B) : const Color(0xFF166534);
-
     final days = seller!.daysRemaining;
+
+    final badgeBg = hasWarning
+        ? const Color(0xFFFEE2E2)
+        : const Color(0xFFEFF6FF);
+    final badgeText = hasWarning
+        ? const Color(0xFFDC2626)
+        : const Color(0xFF2563EB);
+
     final statusText = isExpired
         ? 'Membership Expired'
         : isQuotaReached
             ? 'Monthly Quota Full'
             : '$days days left';
 
+    final usageText = seller!.isUnlimited
+        ? '${seller!.videosThisMonth} orders'
+        : '${seller!.videosThisMonth}/${seller!.monthlyQuota} orders';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: hasWarning ? const Color(0xFFFECACA) : _border,
+        ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: hasWarning ? const Color(0xFFEF4444) : const Color(0xFF16A34A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  seller!.plan.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: primaryTextColor,
-                  ),
-                ),
-              ),
-              if (hasWarning)
-                InkWell(
-                  onTap: () => SaasConfig.contactOwnerViaWhatsApp(
-                    customMessage:
-                        'Hi Danish! I need to renew / upgrade my PackProof subscription (${seller!.email}).',
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Renew',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Text(
-                  seller!.isUnlimited
-                      ? '${seller!.videosThisMonth} orders'
-                      : '${seller!.videosThisMonth}/${seller!.monthlyQuota} orders',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: primaryTextColor,
-                  ),
-                ),
-            ],
-          ),
-          if (!seller!.isUnlimited && !isExpired) ...[
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: (seller!.videosThisMonth / seller!.monthlyQuota).clamp(0.0, 1.0),
-                backgroundColor: hasWarning
-                    ? const Color(0xFFFCA5A5)
-                    : const Color(0xFFDCFCE7),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  hasWarning ? const Color(0xFFEF4444) : const Color(0xFF16A34A),
-                ),
-                minHeight: 4,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              seller!.plan.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: badgeText,
+                letterSpacing: 0.5,
               ),
             ),
-          ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$statusText • $usageText',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: hasWarning ? const Color(0xFFDC2626) : _textDark,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (hasWarning)
+            InkWell(
+              onTap: () => SaasConfig.contactOwnerViaWhatsApp(
+                customMessage:
+                    'Hi Danish! I need to renew / upgrade my PackProof subscription (${seller!.email}).',
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Text(
+                  'Renew',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
