@@ -1,17 +1,17 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class SaasConfig {
-  /// Owner: Replace these with your Supabase Project URL and Anon Public Key
-  /// Found in: Supabase Dashboard -> Project Settings -> API
-  static const String supabaseUrl = 'https://YOUR_PROJECT_ID.supabase.co';
-  static const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+  /// Supabase Project URL
+  static const String supabaseUrl = 'https://fhcssagybeqccydpqzmc.supabase.co';
 
-  /// Owner: Your WhatsApp number with country code (e.g. 923001234567)
-  /// When a seller's 30-day membership expires or they hit their quota,
-  /// tapping "Renew / Upgrade" will open a WhatsApp chat directly with you.
-  static const String ownerWhatsApp = '923001234567';
+  /// Supabase Publishable / Anon Public Key
+  static const String supabaseAnonKey =
+      'sb_publishable_OqZn-8zmQ4b4rDj7ARr0FQ_5mTCYEXJ';
 
-  /// Owner: Your email / contact name
+  /// Owner: Your WhatsApp contact number
+  static const String ownerWhatsApp = '03125572205';
+
+  /// Owner: Your contact name
   static const String ownerContactName = 'Danish (PackProof Admin)';
 
   /// Checks if Supabase has been configured with real credentials
@@ -25,7 +25,12 @@ class SaasConfig {
   static Future<void> contactOwnerViaWhatsApp({String? customMessage}) async {
     final message = customMessage ??
         'Hello Danish, I would like to purchase / renew my PackProof membership.';
-    final cleanPhone = ownerWhatsApp.replaceAll(RegExp(r'[^0-9]'), '');
+
+    var cleanPhone = ownerWhatsApp.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '92${cleanPhone.substring(1)}';
+    }
+
     final uri = Uri.parse(
       'https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}',
     );
