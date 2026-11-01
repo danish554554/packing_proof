@@ -39,21 +39,20 @@ ALTER TABLE public.sellers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_proofs ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS Policies for Sellers
--- Sellers can read their own profile
+DROP POLICY IF EXISTS "Sellers can view own profile" ON public.sellers;
 CREATE POLICY "Sellers can view own profile" 
 ON public.sellers FOR SELECT 
 TO authenticated 
 USING (auth.uid() = id);
 
--- Only Admin / Service Role can insert, update, or delete sellers directly
--- (Owner manages this from the Supabase dashboard)
-
 -- 5. RLS Policies for Order Proofs
+DROP POLICY IF EXISTS "Sellers can view own proofs" ON public.order_proofs;
 CREATE POLICY "Sellers can view own proofs" 
 ON public.order_proofs FOR SELECT 
 TO authenticated 
 USING (auth.uid() = seller_id);
 
+DROP POLICY IF EXISTS "Sellers can insert own proofs" ON public.order_proofs;
 CREATE POLICY "Sellers can insert own proofs" 
 ON public.order_proofs FOR INSERT 
 TO authenticated 
