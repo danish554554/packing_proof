@@ -1,84 +1,76 @@
-﻿{
-    "project_info":  {
-                         "project_number":  "442402513623",
-                         "project_id":  "packproof-3cff7",
-                         "storage_bucket":  "packproof-3cff7.firebasestorage.app"
-                     },
-    "client":  [
-                   {
-                       "client_info":  {
-                                           "mobilesdk_app_id":  "1:442402513623:android:32a0fb6fdd592414bcc692",
-                                           "android_client_info":  {
-                                                                       "package_name":  "com.company.packproof_app"
-                                                                   }
-                                       },
-                       "oauth_client":  [
-                                            {
-                                                "client_id":  "442402513623-p400frguv4hgi5fb3tiqp6d349ftvl9p.apps.googleusercontent.com",
-                                                "client_type":  1,
-                                                "android_info":  {
-                                                                     "package_name":  "com.company.packproof_app",
-                                                                     "certificate_hash":  "0d59c3e0c901f4c71c9370e5889b81f51186c8aa"
-                                                                 }
-                                            },
-                                            {
-                                                "client_id":  "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
-                                                "client_type":  3
-                                            }
-                                        ],
-                       "api_key":  [
-                                       {
-                                           "current_key":  "AIzaSyB2ngATfya-xl4JPNSwzMyRU7-CJwR3AA8"
-                                       }
-                                   ],
-                       "services":  {
-                                        "appinvite_service":  {
-                                                                  "other_platform_oauth_client":  [
-                                                                                                      {
-                                                                                                          "client_id":  "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
-                                                                                                          "client_type":  3
-                                                                                                      }
-                                                                                                  ]
-                                                              }
-                                    }
-                   },
-                   {
-                       "client_info":  {
-                                           "mobilesdk_app_id":  "1:442402513623:android:32a0fb6fdd592414bcc692",
-                                           "android_client_info":  {
-                                                                       "package_name":  "pk.packproof.app"
-                                                                   }
-                                       },
-                       "oauth_client":  [
-                                            {
-                                                "client_id":  "442402513623-p400frguv4hgi5fb3tiqp6d349ftvl9p.apps.googleusercontent.com",
-                                                "client_type":  1,
-                                                "android_info":  {
-                                                                     "package_name":  "com.company.packproof_app",
-                                                                     "certificate_hash":  "0d59c3e0c901f4c71c9370e5889b81f51186c8aa"
-                                                                 }
-                                            },
-                                            {
-                                                "client_id":  "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
-                                                "client_type":  3
-                                            }
-                                        ],
-                       "api_key":  [
-                                       {
-                                           "current_key":  "AIzaSyB2ngATfya-xl4JPNSwzMyRU7-CJwR3AA8"
-                                       }
-                                   ],
-                       "services":  {
-                                        "appinvite_service":  {
-                                                                  "other_platform_oauth_client":  [
-                                                                                                      {
-                                                                                                          "client_id":  "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
-                                                                                                          "client_type":  3
-                                                                                                      }
-                                                                                                  ]
-                                                              }
-                                    }
-                   }
-               ],
-    "configuration_version":  "1"
+{
+  "project_info": {
+    "project_number": "442402513623",
+    "project_id": "packproof-3cff7",
+    "storage_bucket": "packproof-3cff7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:442402513623:android:32a0fb6fdd592414bcc692",
+        "android_client_info": {
+          "package_name": "com.company.packproof_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "442402513623-p400frguv4hgi5fb3tiqp6d349ftvl9p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.company.packproof_app",
+            "certificate_hash": "0d59c3e0c901f4c71c9370e5889b81f51186c8aa"
+          }
+        },
+        {
+          "client_id": "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2ngATfya-xl4JPNSwzMyRU7-CJwR3AA8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:442402513623:android:760677701cb737d0bcc692",
+        "android_client_info": {
+          "package_name": "pk.packproof.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2ngATfya-xl4JPNSwzMyRU7-CJwR3AA8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }

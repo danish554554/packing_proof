@@ -9,6 +9,8 @@ class GoogleAuthService extends ChangeNotifier {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: scopes,
+    serverClientId:
+        '442402513623-v865sd82vvq8mvv3lthai273mi868cjo.apps.googleusercontent.com',
   );
 
   GoogleSignInAccount? _currentUser;
