@@ -1,18 +1,17 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class SaasConfig {
-  /// Supabase Project URL
-  static const String supabaseUrl = 'https://fhcssagybeqccydpqzmc.supabase.co';
+  /// Supabase Project URL (e.g. https://your-project.supabase.co)
+  static const String supabaseUrl = 'https://YOUR_PROJECT_ID.supabase.co';
 
   /// Supabase Publishable / Anon Public Key
-  static const String supabaseAnonKey =
-      'sb_publishable_OqZn-8zmQ4b4rDj7ARr0FQ_5mTCYEXJ';
+  static const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
 
-  /// Owner: Your WhatsApp contact number
-  static const String ownerWhatsApp = '03125572205';
+  /// Owner: Your WhatsApp contact number (e.g. 03001234567)
+  static const String ownerWhatsApp = '03001234567';
 
   /// Owner: Your contact name
-  static const String ownerContactName = 'Danish (PackProof Admin)';
+  static const String ownerContactName = 'PackProof Admin';
 
   /// Checks if Supabase has been configured with real credentials
   static bool get isConfigured =>
@@ -24,7 +23,7 @@ class SaasConfig {
   /// Helper to open WhatsApp directly with a pre-filled message
   static Future<void> contactOwnerViaWhatsApp({String? customMessage}) async {
     final message = customMessage ??
-        'Hello Danish, I would like to purchase / renew my PackProof membership.';
+        'Hello, I would like to purchase / renew my PackProof membership.';
 
     var cleanPhone = ownerWhatsApp.replaceAll(RegExp(r'[^0-9]'), '');
     if (cleanPhone.startsWith('0')) {

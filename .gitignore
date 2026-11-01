@@ -34,11 +34,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Desktop & Web (mobile only project)
+# Desktop, Web & iOS (Android-only project)
 /linux/
 /macos/
 /windows/
 /web/
+/ios/
 
 # Symbolication related
 app.*.symbols
@@ -55,7 +56,9 @@ app.*.map.json
 *.jks
 *.keystore
 **/android/key.properties
-
-
 *.apk
+
+# Sensitive credentials & personal configs (use .example templates in repo)
+lib/core/saas_config.dart
+android/app/google-services.json
 
