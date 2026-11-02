@@ -138,3 +138,50 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==============================================================================
+-- 8. Admin Helper Function: Assign or Renew Plan in 1 Click
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.assign_seller_plan(
+    p_email TEXT,
+    p_plan TEXT, -- 'silver', 'gold', or 'platinum'
+    p_days INT DEFAULT 30
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_quota INT;
+    v_updated_seller public.sellers%ROWTYPE;
+BEGIN
+    -- Determine quota based on plan
+    IF LOWER(p_plan) = 'gold' THEN
+        v_quota := 200;
+    ELSIF LOWER(p_plan) = 'platinum' THEN
+        v_quota := 999999;
+    ELSE
+        v_quota := 100;
+    END IF;
+
+    UPDATE public.sellers
+    SET 
+        plan = LOWER(p_plan),
+        monthly_quota = v_quota,
+        videos_recorded_this_month = 0,
+        expires_at = NOW() + (p_days || ' days')::INTERVAL,
+        is_active = true,
+        updated_at = NOW()
+    WHERE LOWER(email) = LOWER(p_email)
+    RETURNING * INTO v_updated_seller;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Seller email not found: ' || p_email);
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'email', v_updated_seller.email,
+        'plan', v_updated_seller.plan,
+        'monthly_quota', v_updated_seller.monthly_quota,
+        'expires_at', v_updated_seller.expires_at
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
