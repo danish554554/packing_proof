@@ -1027,6 +1027,9 @@ class _SaaSMembershipBanner extends StatelessWidget {
     final hasWarning = isExpired || isQuotaReached;
     final days = seller!.daysRemaining;
     final planUpper = seller!.plan.toUpperCase();
+    final quotaText = seller!.isUnlimited
+        ? 'Unlimited orders'
+        : '${seller!.remainingQuota} orders left';
 
     // Golden VIP Capsule as shown in concept mockup
     if (!hasWarning) {
@@ -1071,7 +1074,7 @@ class _SaaSMembershipBanner extends StatelessWidget {
                   ),
                 ),
                 TextSpan(
-                  text: '$days days left • ${seller!.monthlyQuota} orders quota',
+                  text: '$days days left • $quotaText',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF78350F),
