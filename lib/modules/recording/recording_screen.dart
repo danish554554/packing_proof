@@ -66,20 +66,28 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   Future<String> _getLocalFilePath(
     String orderId,
-    RecordingFlowType flowType,
-  ) async {
+    RecordingFlowType flowType, {
+    String? sellerId,
+  }) async {
     final now = DateTime.now();
     final docsDir = await getApplicationDocumentsDirectory();
     String? orderFolder;
 
     if (flowType == RecordingFlowType.returnRecording) {
-      orderFolder = await HistoryService().findExistingOrderFolderPath(orderId);
+      orderFolder = await HistoryService().findExistingOrderFolderPath(
+        orderId,
+        sellerId: sellerId,
+      );
     }
 
     if (orderFolder == null || orderFolder.isEmpty) {
       final dateFolderName =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      orderFolder = '${docsDir.path}/$dateFolderName/$orderId';
+      if (sellerId != null && sellerId.isNotEmpty) {
+        orderFolder = '${docsDir.path}/sellers/$sellerId/$dateFolderName/$orderId';
+      } else {
+        orderFolder = '${docsDir.path}/$dateFolderName/$orderId';
+      }
     }
 
     await Directory(orderFolder).create(recursive: true);
@@ -148,7 +156,13 @@ class _RecordingScreenState extends State<RecordingScreen> {
         }
       }
 
-      final newPath = await _getLocalFilePath(orderId, flowType);
+      if (!mounted) return;
+      final seller = context.read<SaasAuthService>().currentSeller;
+      final newPath = await _getLocalFilePath(
+        orderId,
+        flowType,
+        sellerId: seller?.id,
+      );
       final savedFile = await File(file.path).copy(newPath);
 
       await recordingController.stopRecording(savedFile.path);

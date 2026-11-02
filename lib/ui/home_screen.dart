@@ -12,6 +12,7 @@ import '../modules/queue/upload_queue_screen.dart';
 import '../modules/recording/recording_screen.dart';
 import '../modules/scanner/scanner_screen.dart';
 import '../modules/settings/settings_screen.dart';
+import '../services/google_auth_service.dart';
 import '../services/saas_auth_service.dart';
 import '../services/upload_queue_service.dart';
 
@@ -153,6 +154,69 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     }
 
+    // Check if Google Drive is connected for this user
+    final googleAuth = context.read<GoogleAuthService>();
+    if (googleAuth.currentUser == null) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dCtx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.cloud_off_outlined, color: _primary),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Connect Google Drive',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'To automatically back up your packing proof videos to your personal Google Drive for free, please connect your Google account.\n\nWould you like to connect your Google Drive now?',
+            style: TextStyle(fontSize: 14, color: _textDark, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dCtx, true),
+              child: const Text('Record Offline', style: TextStyle(color: _textMuted)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(dCtx, false);
+                try {
+                  await googleAuth.signIn(sellerId: seller?.id);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to connect Google Drive: $e'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.link, size: 18),
+              label: const Text('Connect Now'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (proceed != true && googleAuth.currentUser == null) {
+        return;
+      }
+    }
+
+    if (!context.mounted) return;
+
     final isReturn = flowType == RecordingFlowType.returnRecording;
     final scannedOrderId = await Navigator.push<String>(
       context,
@@ -290,6 +354,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   uploadingCount: uploading,
                   pendingCount: pending,
                   onTap: () => _openQueue(context, filter: QueueFilter.all),
+                ),
+              ],
+              if (context.watch<GoogleAuthService>().currentUser == null) ...[
+                const SizedBox(height: 10),
+                _ConnectDriveNotice(
+                  onConnect: () async {
+                    try {
+                      final seller = context.read<SaasAuthService>().currentSeller;
+                      await context.read<GoogleAuthService>().signIn(sellerId: seller?.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Google Drive connected successfully!'),
+                            backgroundColor: Color(0xFF16A34A),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to connect Google Drive: $e'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    }
+                  },
                 ),
               ],
               const SizedBox(height: 14),
@@ -1137,6 +1229,82 @@ class _SaaSMembershipBanner extends StatelessWidget {
                 color: Color(0xFF16A34A),
                 decoration: TextDecoration.underline,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectDriveNotice extends StatelessWidget {
+  const _ConnectDriveNotice({required this.onConnect});
+
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2563EB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.cloud_upload_outlined,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Connect Your Google Drive',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Color(0xFF1E3A8A),
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Link your Gmail to auto-save proof videos free.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF3B82F6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: onConnect,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Connect',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),
         ],

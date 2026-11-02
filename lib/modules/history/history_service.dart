@@ -19,16 +19,19 @@ class HistoryEntry {
 }
 
 class HistoryService {
-  Future<List<HistoryEntry>> getAllVideos() async {
-    final dir = await getApplicationDocumentsDirectory();
+  Future<List<HistoryEntry>> getAllVideos({String? sellerId}) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final targetDir = (sellerId != null && sellerId.isNotEmpty)
+        ? Directory('${docsDir.path}/sellers/$sellerId')
+        : docsDir;
 
-    if (!await dir.exists()) {
+    if (!await targetDir.exists()) {
       return <HistoryEntry>[];
     }
 
     final entries = <HistoryEntry>[];
 
-    await for (final entity in dir.list(recursive: true, followLinks: false)) {
+    await for (final entity in targetDir.list(recursive: true, followLinks: false)) {
       if (entity is! File || !entity.path.toLowerCase().endsWith('.mp4')) {
         continue;
       }
@@ -55,16 +58,19 @@ class HistoryService {
     return entries;
   }
 
-  Future<String?> findExistingOrderFolderPath(String orderId) async {
-    final dir = await getApplicationDocumentsDirectory();
+  Future<String?> findExistingOrderFolderPath(String orderId, {String? sellerId}) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final targetDir = (sellerId != null && sellerId.isNotEmpty)
+        ? Directory('${docsDir.path}/sellers/$sellerId')
+        : docsDir;
 
-    if (!await dir.exists()) {
+    if (!await targetDir.exists()) {
       return null;
     }
 
     final matchingDirectories = <Directory>[];
 
-    await for (final entity in dir.list(recursive: true, followLinks: false)) {
+    await for (final entity in targetDir.list(recursive: true, followLinks: false)) {
       if (entity is Directory && _folderName(entity.path) == orderId) {
         matchingDirectories.add(entity);
       }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/saas_config.dart';
+import '../../services/google_auth_service.dart';
 import '../../services/saas_auth_service.dart';
+import '../../services/upload_queue_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +40,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.text,
     );
 
-    if (!success && mounted) {
+    if (success && mounted) {
+      final seller = authService.currentSeller;
+      if (seller != null) {
+        await context.read<UploadQueueService>().switchSeller(seller.id);
+        if (!mounted) return;
+        await context.read<GoogleAuthService>().syncWithSeller(seller.id);
+      }
+    } else if (!success && mounted) {
       final error = authService.authError ?? 'Login failed. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

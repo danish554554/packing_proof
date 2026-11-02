@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../modules/queue/upload_queue_screen.dart';
+import '../../services/saas_auth_service.dart';
 import '../../ui/home_screen.dart';
 import '../settings/settings_screen.dart';
 import 'history_service.dart';
@@ -33,13 +35,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final seller = context.watch<SaasAuthService>().currentSeller;
+
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
           child: FutureBuilder<List<HistoryEntry>>(
-            future: HistoryService().getAllVideos(),
+            future: HistoryService().getAllVideos(sellerId: seller?.id),
             builder: (context, snapshot) {
               final allEntries = snapshot.data ?? const <HistoryEntry>[];
 

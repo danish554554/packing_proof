@@ -15,17 +15,20 @@ class StorageStats {
 }
 
 class StorageService {
-  Future<StorageStats> getStorageStats() async {
-    final dir = await getApplicationDocumentsDirectory();
+  Future<StorageStats> getStorageStats([String? sellerId]) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final targetDir = (sellerId != null && sellerId.isNotEmpty)
+        ? Directory('${docsDir.path}/sellers/$sellerId')
+        : docsDir;
 
-    if (!await dir.exists()) {
+    if (!await targetDir.exists()) {
       return const StorageStats(videoCount: 0, totalBytes: 0);
     }
 
     var count = 0;
     var totalBytes = 0;
 
-    await for (final entity in dir.list(recursive: true, followLinks: false)) {
+    await for (final entity in targetDir.list(recursive: true, followLinks: false)) {
       if (entity is File && entity.path.toLowerCase().endsWith('.mp4')) {
         final stat = await entity.stat();
         count += 1;

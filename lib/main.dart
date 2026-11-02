@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
           create: (context) => RecordingController(),
         ),
         ChangeNotifierProvider<GoogleAuthService>(
-          create: (context) => GoogleAuthService()..signInSilently(),
+          create: (context) => GoogleAuthService(),
         ),
         ProxyProvider<GoogleAuthService, GoogleDriveService>(
           update: (context, authService, previous) =>

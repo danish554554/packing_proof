@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GoogleAuthService extends ChangeNotifier {
   static const List<String> scopes = <String>[
     'email',
     'https://www.googleapis.com/auth/drive.file',
   ];
+
+  static const String _driveOwnerKey = 'packproof_google_drive_owner_seller_id';
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: scopes,
@@ -15,15 +18,56 @@ class GoogleAuthService extends ChangeNotifier {
 
   GoogleSignInAccount? _currentUser;
   Future<GoogleSignInAccount?>? _silentSignInFuture;
+  String? _currentSellerId;
 
-  GoogleSignInAccount? get currentUser =>
-      _currentUser ?? _googleSignIn.currentUser;
+  GoogleSignInAccount? get currentUser => _currentUser;
 
-  Future<GoogleSignInAccount?> signIn() async {
+  /// Sync Google Drive connection with the active SaaS seller
+  Future<void> syncWithSeller(String? sellerId) async {
+    _currentSellerId = sellerId;
+
+    if (sellerId == null || sellerId.isEmpty) {
+      if (_currentUser != null || await _googleSignIn.isSignedIn()) {
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+      }
+      _currentUser = null;
+      notifyListeners();
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final connectedSellerId = prefs.getString(_driveOwnerKey);
+
+    // If Google Drive on device was connected by another seller (or none), disconnect!
+    if (connectedSellerId == null || connectedSellerId != sellerId) {
+      if (_currentUser != null || await _googleSignIn.isSignedIn()) {
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+      }
+      _currentUser = null;
+      notifyListeners();
+      return;
+    }
+
+    // This seller previously connected their Drive on this device; restore silently
+    await signInSilently();
+  }
+
+  Future<GoogleSignInAccount?> signIn({String? sellerId}) async {
+    final activeSellerId = sellerId ?? _currentSellerId;
     try {
       await _googleSignIn.signOut();
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
       _currentUser = account;
+
+      if (account != null && activeSellerId != null && activeSellerId.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_driveOwnerKey, activeSellerId);
+      }
+
       notifyListeners();
       return account;
     } catch (e) {
@@ -67,21 +111,28 @@ class GoogleAuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_driveOwnerKey);
+    } catch (_) {}
+
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+
     _currentUser = null;
     notifyListeners();
   }
 
   Future<bool> isSignedIn() async {
-    final bool signedIn = await _googleSignIn.isSignedIn();
-
-    if (signedIn && _currentUser == null) {
-      _currentUser =
-          _googleSignIn.currentUser ?? await signInSilently();
-      notifyListeners();
+    if (_currentSellerId != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final connectedSellerId = prefs.getString(_driveOwnerKey);
+      if (connectedSellerId != _currentSellerId) {
+        return false;
+      }
     }
-
-    return signedIn;
+    return _currentUser != null;
   }
 
   Future<String?> getAccessToken() async {

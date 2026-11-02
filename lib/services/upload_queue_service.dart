@@ -90,7 +90,13 @@ class UploadQueueItem {
 class UploadQueueService extends ChangeNotifier {
   UploadQueueService(this._driveService);
 
-  static const String _storageKey = 'packproof_upload_queue_v2';
+  String? _currentSellerId;
+  String? get currentSellerId => _currentSellerId;
+
+  String get _storageKey => (_currentSellerId != null && _currentSellerId!.isNotEmpty)
+      ? 'packproof_upload_queue_$_currentSellerId'
+      : 'packproof_upload_queue_v2';
+
   static const int _maxAutoRetries = 5;
 
   GoogleDriveService _driveService;
@@ -163,17 +169,21 @@ class UploadQueueService extends ChangeNotifier {
     }
   }
 
-  Future<void> init() async {
-    if (_isInitialized) {
+  /// Switch queue storage and active items to match the authenticated seller
+  Future<void> switchSeller(String? sellerId) async {
+    if (_isInitialized && _currentSellerId == sellerId) {
       return;
     }
+    _currentSellerId = sellerId;
+    _allItems.clear();
+    _pendingQueue.clear();
+    _isProcessing = false;
 
-    final prefs = await SharedPreferences.getInstance();
-    final rawList = prefs.getStringList(_storageKey) ?? <String>[];
+    if (sellerId != null && sellerId.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final rawList = prefs.getStringList(_storageKey) ?? <String>[];
 
-    _allItems
-      ..clear()
-      ..addAll(
+      _allItems.addAll(
         rawList.map((raw) {
           final item = UploadQueueItem.fromJson(
             jsonDecode(raw) as Map<String, dynamic>,
@@ -188,8 +198,6 @@ class UploadQueueService extends ChangeNotifier {
             if (!fileExists) {
               item.error = 'Video file missing from local storage.';
             } else if (item.error == null || isTransientError(item.error!)) {
-              // Video was uploading or interrupted when app closed.
-              // Clear error so it stays in PENDING and is NOT marked as failed!
               item.error = null;
             }
           }
@@ -198,19 +206,32 @@ class UploadQueueService extends ChangeNotifier {
         }),
       );
 
-    _pendingQueue
-      ..clear()
-      ..addAll(_allItems.where((item) => item.isPending));
+      _pendingQueue.addAll(_allItems.where((item) => item.isPending));
+      _sortItems();
+      _isInitialized = true;
+      notifyListeners();
 
-    _sortItems();
-    _isInitialized = true;
-    notifyListeners();
+      if (_pendingQueue.isNotEmpty) {
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          resumeQueue();
+        });
+      }
+    } else {
+      _isInitialized = true;
+      notifyListeners();
+    }
+  }
 
-    if (_pendingQueue.isNotEmpty) {
-      // Delay slightly on cold start to let silent sign-in initialize
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        resumeQueue();
-      });
+  Future<void> init() async {
+    if (_isInitialized) {
+      return;
+    }
+
+    if (_currentSellerId != null && _currentSellerId!.isNotEmpty) {
+      await switchSeller(_currentSellerId);
+    } else {
+      _isInitialized = true;
+      notifyListeners();
     }
   }
 

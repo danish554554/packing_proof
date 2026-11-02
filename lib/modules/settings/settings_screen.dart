@@ -69,7 +69,9 @@ class SettingsScreen extends StatelessWidget {
                 connectedEmail: connectedEmail,
                 onConnect: () async {
                   try {
-                    final account = await authService.signIn();
+                    final account = await authService.signIn(
+                      sellerId: saasAuth.currentSeller?.id,
+                    );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -124,7 +126,7 @@ class SettingsScreen extends StatelessWidget {
               const _SectionLabel(label: 'OVERVIEW'),
               const SizedBox(height: 10),
               FutureBuilder<StorageStats>(
-                future: StorageService().getStorageStats(),
+                future: StorageService().getStorageStats(saasAuth.currentSeller?.id),
                 builder: (context, snapshot) {
                   final stats = snapshot.data ??
                       const StorageStats(videoCount: 0, totalBytes: 0);
@@ -831,8 +833,12 @@ class _MembershipCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: () async {
                   final saasAuth = context.read<SaasAuthService>();
+                  final googleAuth = context.read<GoogleAuthService>();
+                  final uploadQueue = context.read<UploadQueueService>();
                   final navigator = Navigator.of(context);
                   await saasAuth.logout();
+                  await googleAuth.signOut();
+                  await uploadQueue.switchSeller(null);
                   if (context.mounted) {
                     navigator.pushAndRemoveUntil(
                       MaterialPageRoute(

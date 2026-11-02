@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/saas_config.dart';
+import '../../services/google_auth_service.dart';
 import '../../services/saas_auth_service.dart';
+import '../../services/upload_queue_service.dart';
 import '../../ui/home_screen.dart';
 import 'login_screen.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  String? _syncedSellerId;
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +34,29 @@ class AuthGate extends StatelessWidget {
     }
 
     if (!saasAuth.isAuthenticated) {
+      if (_syncedSellerId != null) {
+        _syncedSellerId = null;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<UploadQueueService>().switchSeller(null);
+            context.read<GoogleAuthService>().syncWithSeller(null);
+          }
+        });
+      }
       return const LoginScreen();
     }
 
     final seller = saasAuth.currentSeller;
+    if (seller != null && seller.id != _syncedSellerId) {
+      _syncedSellerId = seller.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<UploadQueueService>().switchSeller(seller.id);
+          context.read<GoogleAuthService>().syncWithSeller(seller.id);
+        }
+      });
+    }
+
     if (seller == null || !seller.isActive) {
       return Scaffold(
         backgroundColor: const Color(0xFFF7F8FA),
