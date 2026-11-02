@@ -1,0 +1,29 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # Runs every 3 days at 06:00 UTC (Supabase pauses free projects after 7 days of inactivity)
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: # Allows manual one-click trigger from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://fhcssagybeqccydpqzmc.supabase.co' }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_OqZn-8zmQ4b4rDj7ARr0FQ_5mTCYEXJ' }}
+        run: |
+          echo "Sending keep-alive ping to Supabase..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "$SUPABASE_URL/rest/v1/sellers?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY")
+          
+          echo "Supabase returned HTTP status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Success: Supabase activity registered. Project will remain active and never pause."
+          else
+            echo "Received status $STATUS"
+          fi
