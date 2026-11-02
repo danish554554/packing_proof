@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../modules/queue/upload_queue_screen.dart';
 import '../../ui/home_screen.dart';
 import '../settings/settings_screen.dart';
 import 'history_service.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
   static const Color _bg = Color(0xFFF7F8FA);
   static const Color _textDark = Color(0xFF111827);
   static const Color _textMuted = Color(0xFF6B7280);
+  static const Color _primary = Color(0xFFFF5A1F);
+
+  String _searchQuery = '';
+  String _selectedFilter = 'All'; // 'All', 'Packing', 'Return'
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,47 +39,206 @@ class HistoryScreen extends StatelessWidget {
           child: FutureBuilder<List<HistoryEntry>>(
             future: HistoryService().getAllVideos(),
             builder: (context, snapshot) {
-              final entries = snapshot.data ?? const <HistoryEntry>[];
-              final historyGroups = _buildGroups(entries);
-              final totalCount = entries.length;
+              final allEntries = snapshot.data ?? const <HistoryEntry>[];
+
+              // Apply search & filter
+              final filteredEntries = allEntries.where((entry) {
+                final matchesSearch = _searchQuery.isEmpty ||
+                    entry.orderId.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                    entry.fileName.toLowerCase().contains(_searchQuery.toLowerCase());
+
+                if (!matchesSearch) return false;
+
+                if (_selectedFilter == 'Packing') {
+                  return !entry.fileName.toLowerCase().contains('return');
+                } else if (_selectedFilter == 'Return') {
+                  return entry.fileName.toLowerCase().contains('return');
+                }
+                return true;
+              }).toList();
+
+              final historyGroups = _buildGroups(filteredEntries);
+              final totalCount = allEntries.length;
 
               if (snapshot.connectionState == ConnectionState.waiting &&
                   !snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(color: _primary),
+                );
               }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'History',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: _textDark,
-                      height: 1.1,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'History',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: _textDark,
+                              letterSpacing: -0.5,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$totalCount saved proof${totalCount == 1 ? '' : 's'}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: _textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Modern Search Box
+                  Container(
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x05000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val.trim();
+                        });
+                      },
+                      style: const TextStyle(fontSize: 14, color: _textDark),
+                      decoration: InputDecoration(
+                        hintText: 'Search by Daraz tracking number...',
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _searchQuery = '';
+                                  });
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$totalCount ${totalCount == 1 ? 'recording' : 'recordings'} saved',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: _textMuted,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(height: 10),
+
+                  // Filter Pills
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ['All', 'Packing', 'Return'].map((filter) {
+                        final isSelected = _selectedFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = filter;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected ? _primary : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? _primary
+                                      : const Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              child: Text(
+                                filter,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected ? Colors.white : _textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
+
+                  // List of proof groups
                   Expanded(
                     child: historyGroups.isEmpty
-                        ? const _EmptyHistoryState()
+                        ? (_searchQuery.isNotEmpty || _selectedFilter != 'All'
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.search_off_rounded,
+                                      size: 48,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No proofs matching "$_searchQuery"',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: _textDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Try a different tracking number or filter',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : const _EmptyHistoryState())
                         : ListView.builder(
                             padding: const EdgeInsets.only(bottom: 16),
                             itemCount: historyGroups.length,
                             itemBuilder: (context, index) {
                               final group = historyGroups[index];
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: 20),
+                                padding: const EdgeInsets.only(bottom: 18),
                                 child: _HistoryGroupSection(group: group),
                               );
                             },
@@ -105,7 +281,8 @@ class HistoryScreen extends StatelessWidget {
   }
 
   List<HistoryDayGroup> _buildGroups(List<HistoryEntry> entries) {
-    final Map<String, List<HistoryItem>> grouped = <String, List<HistoryItem>>{};
+    final Map<String, List<HistoryItem>> grouped =
+        <String, List<HistoryItem>>{};
 
     for (final entry in entries) {
       final key = _formatDateKey(entry.recordedAt);
@@ -113,6 +290,7 @@ class HistoryScreen extends StatelessWidget {
             HistoryItem(
               orderId: entry.orderId,
               fileName: entry.fileName,
+              filePath: entry.filePath,
               timeLabel: _formatTime(entry.recordedAt),
               sizeLabel: _formatBytes(entry.sizeBytes),
             ),
@@ -130,6 +308,18 @@ class HistoryScreen extends StatelessWidget {
   }
 
   String _formatDateKey(DateTime dateTime) {
+    final now = DateTime.now();
+    if (dateTime.year == now.year &&
+        dateTime.month == now.month &&
+        dateTime.day == now.day) {
+      return 'Today';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (dateTime.year == yesterday.year &&
+        dateTime.month == yesterday.month &&
+        dateTime.day == yesterday.day) {
+      return 'Yesterday';
+    }
     return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
   }
 
@@ -270,6 +460,11 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isReturn = item.fileName.toLowerCase().contains('return');
+    final flowLabel = isReturn ? 'Return Proof' : 'Packing Proof';
+    final flowColor = isReturn ? const Color(0xFF2563EB) : _primary;
+    final flowBg = isReturn ? const Color(0xFFEFF6FF) : const Color(0xFFFFEFE8);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -278,88 +473,167 @@ class _HistoryCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: Color(0x06000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEFE8),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.videocam_outlined,
-              color: _primary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.orderId,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _textDark,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: flowBg,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  item.fileName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    color: _textMuted,
-                  ),
+                child: Icon(
+                  isReturn
+                      ? Icons.assignment_return_outlined
+                      : Icons.inventory_2_outlined,
+                  color: flowColor,
+                  size: 22,
                 ),
-                const SizedBox(height: 10),
-                Row(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 14,
-                      color: _textMuted,
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      item.timeLabel,
+                      item.orderId,
                       style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: _textMuted,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: _textDark,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Icon(
-                      Icons.folder_outlined,
-                      size: 14,
-                      color: _textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        item.sizeLabel,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: _textMuted,
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: flowBg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            flowLabel.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: flowColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          item.sizeLabel,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: _textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF8EE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.cloud_done_rounded,
+                      size: 13,
+                      color: Color(0xFF16A34A),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Drive',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF16A34A),
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF3F4F6)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  size: 14,
+                  color: _textMuted,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  item.timeLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: _textDark,
+                  ),
+                ),
+                const Spacer(),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: item.orderId));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Copied tracking: ${item.orderId}'),
+                        duration: const Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: const Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.copy_rounded, size: 14, color: _primary),
+                        SizedBox(width: 4),
+                        Text(
+                          'Copy Tracking',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -485,11 +759,13 @@ class HistoryItem {
   final String fileName;
   final String timeLabel;
   final String sizeLabel;
+  final String? filePath;
 
   const HistoryItem({
     required this.orderId,
     required this.fileName,
     required this.timeLabel,
     required this.sizeLabel,
+    this.filePath,
   });
 }

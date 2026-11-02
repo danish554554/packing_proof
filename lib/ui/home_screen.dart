@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/recording_controller.dart';
@@ -569,27 +570,30 @@ class _RecentUploadTile extends StatelessWidget {
   static const Color _textMuted = Color(0xFF6B7280);
   static const Color _border = Color(0xFFE5E7EB);
   static const Color _success = Color(0xFF16A34A);
+  static const Color _primary = Color(0xFFFF5A1F);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0xFFEAF8EE),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.check_circle_outline, color: _success),
+            child:
+                const Icon(Icons.cloud_done_rounded, color: _success, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,20 +601,38 @@ class _RecentUploadTile extends StatelessWidget {
                 Text(
                   item.orderId,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
                     color: _textDark,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  '${item.flowLabel} • Uploaded to Drive',
+                  '${item.flowLabel} • Backed up to Google Drive',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: _textMuted,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: item.orderId));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Copied tracking: ${item.orderId}'),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(Icons.copy_rounded, size: 16, color: _primary),
             ),
           ),
         ],

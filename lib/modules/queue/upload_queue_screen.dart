@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../controllers/recording_controller.dart';
 import '../../modules/history/history_screen.dart';
 import '../../services/upload_queue_service.dart';
 import '../../ui/home_screen.dart';
@@ -337,9 +340,29 @@ class _QueueItemCard extends StatelessWidget {
   static const Color _warning = Color(0xFFF59E0B);
   static const Color _primary = Color(0xFFFF5A1F);
 
+  String _getFileSizeString(String path) {
+    try {
+      final f = File(path);
+      if (f.existsSync()) {
+        final bytes = f.lengthSync();
+        if (bytes <= 0) return '';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        var value = bytes.toDouble();
+        var unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        return '${value.toStringAsFixed(unitIndex == 0 ? 0 : 1)} ${units[unitIndex]}';
+      }
+    } catch (_) {}
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final visualState = _getVisualState(item);
+    final sizeStr = _getFileSizeString(item.filePath);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -349,9 +372,9 @@ class _QueueItemCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: Color(0x06000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -361,8 +384,8 @@ class _QueueItemCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: visualState.softColor,
                   borderRadius: BorderRadius.circular(14),
@@ -370,18 +393,53 @@ class _QueueItemCard extends StatelessWidget {
                 child: Icon(
                   visualState.icon,
                   color: visualState.color,
-                  size: 20,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  '${item.flowLabel} • ${item.orderId}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _textDark,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.orderId,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: _textDark,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Text(
+                          item.flowLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: item.flowType == RecordingFlowType.packing
+                                ? _primary
+                                : Colors.blueAccent,
+                          ),
+                        ),
+                        if (sizeStr.isNotEmpty) ...[
+                          const Text(
+                            ' • ',
+                            style: TextStyle(fontSize: 12, color: _textMuted),
+                          ),
+                          Text(
+                            sizeStr,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: _textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
               ),
               _StatusBadge(
@@ -391,24 +449,50 @@ class _QueueItemCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Text(
-            item.filePath,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              color: _textMuted,
-              height: 1.4,
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF3F4F6)),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _formatDateTime(item.createdAt),
-            style: const TextStyle(
-              fontSize: 12,
-              color: _textMuted,
-              fontWeight: FontWeight.w500,
+            child: Row(
+              children: [
+                Icon(
+                  item.isCompleted
+                      ? Icons.cloud_done_rounded
+                      : item.isUploading
+                          ? Icons.cloud_upload_rounded
+                          : Icons.access_time_rounded,
+                  size: 16,
+                  color: item.isCompleted ? _success : _textMuted,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item.isCompleted
+                        ? 'Backed up in personal Google Drive'
+                        : item.isUploading
+                            ? 'Uploading to Google Drive...'
+                            : 'Queued for upload • Ready',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          item.isCompleted ? const Color(0xFF15803D) : _textDark,
+                    ),
+                  ),
+                ),
+                Text(
+                  _formatDateTime(item.createdAt),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: _textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           if (item.retryCount > 0 &&
@@ -439,33 +523,84 @@ class _QueueItemCard extends StatelessWidget {
             ),
           ],
           if (item.error != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              item.error!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: _error,
-                height: 1.4,
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, size: 16, color: _error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.error!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: _error,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-          if (onRetry != null) ...[
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text(item.error != null ? 'Retry upload' : 'Upload now'),
-                style: TextButton.styleFrom(
-                  foregroundColor: _primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: item.orderId));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copied: ${item.orderId}'),
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.copy_rounded, size: 14, color: _primary),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Copy Tracking #',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              if (onRetry != null)
+                TextButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label:
+                      Text(item.error != null ? 'Retry upload' : 'Upload now'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _primary,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
