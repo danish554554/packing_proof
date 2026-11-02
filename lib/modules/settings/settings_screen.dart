@@ -7,6 +7,7 @@ import '../../modules/storage/storage_service.dart';
 import '../../services/google_auth_service.dart';
 import '../../services/saas_auth_service.dart';
 import '../../services/upload_queue_service.dart';
+import '../auth/auth_gate.dart';
 import '../history/history_screen.dart';
 import '../queue/upload_queue_screen.dart';
 import '../../ui/home_screen.dart';
@@ -828,7 +829,19 @@ class _MembershipCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               OutlinedButton.icon(
-                onPressed: () => context.read<SaasAuthService>().logout(),
+                onPressed: () async {
+                  final saasAuth = context.read<SaasAuthService>();
+                  final navigator = Navigator.of(context);
+                  await saasAuth.logout();
+                  if (context.mounted) {
+                    navigator.pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => const AuthGate(),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                },
                 icon: const Icon(Icons.logout, size: 16),
                 label: const Text('Sign Out'),
                 style: OutlinedButton.styleFrom(
