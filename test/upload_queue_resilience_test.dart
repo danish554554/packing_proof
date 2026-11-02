@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:packproof_app/controllers/recording_controller.dart';
-import 'package:packproof_app/services/google_auth_service.dart';
-import 'package:packproof_app/services/google_drive_service.dart';
 import 'package:packproof_app/services/upload_queue_service.dart';
 
 void main() {
@@ -27,9 +25,6 @@ void main() {
     });
 
     test('QUEUE-01 & QUEUE-05: Enqueuing items and clearing completed items', () {
-      final driveService = GoogleDriveService(GoogleAuthService());
-      final queueService = UploadQueueService(driveService);
-
       final item1 = UploadQueueItem(
         id: 'item-1',
         orderId: 'PK-DEX1',
