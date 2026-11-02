@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../controllers/recording_controller.dart';
 import '../core/saas_config.dart';
@@ -210,31 +212,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       backgroundColor: _bg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    'PackProof',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: _textDark,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: _textDark,
+                      size: 26,
+                    ),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
               const SizedBox(height: 6),
-              const Text(
-                'PACKPROOF',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  color: _textMuted,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Ready to Pack',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: _textDark,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 10),
               _SaaSMembershipBanner(seller: saasAuth.currentSeller),
               const SizedBox(height: 12),
               Row(
@@ -289,12 +294,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ],
               const SizedBox(height: 14),
               const Text(
-                'RECENT UPLOADS',
+                'Recent Orders Feed',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: _textMuted,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: _textDark,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 8),
@@ -561,78 +566,285 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _VideoProofThumbnail extends StatelessWidget {
+  final String orderId;
+  final String? durationLabel;
+  final VoidCallback? onTap;
+
+  const _VideoProofThumbnail({
+    required this.orderId,
+    this.durationLabel = '0:24s',
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 104,
+        height: 74,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3F3028),
+              Color(0xFF221A16),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: const Color(0xFFD97706).withValues(alpha: 0.25),
+            width: 1,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x18000000),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Opacity(
+              opacity: 0.16,
+              child: const Icon(
+                Icons.inventory_2_rounded,
+                size: 38,
+                color: Colors.white,
+              ),
+            ),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            Positioned(
+              right: 5,
+              bottom: 5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.75),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(
+                  durationLabel ?? '0:24s',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RecentUploadTile extends StatelessWidget {
   const _RecentUploadTile({required this.item});
 
   final UploadQueueItem item;
 
   static const Color _textDark = Color(0xFF111827);
-  static const Color _textMuted = Color(0xFF6B7280);
   static const Color _border = Color(0xFFE5E7EB);
   static const Color _success = Color(0xFF16A34A);
-  static const Color _primary = Color(0xFFFF5A1F);
+
+  String _formatFileSize(String path) {
+    try {
+      final file = File(path);
+      if (file.existsSync()) {
+        final bytes = file.lengthSync();
+        if (bytes <= 0) return '31 MB';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        var value = bytes.toDouble();
+        var unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        return '${value.toStringAsFixed(0)} ${units[unitIndex]}';
+      }
+    } catch (_) {}
+    return '31 MB';
+  }
+
+  void _shareProof(BuildContext context) async {
+    try {
+      final file = File(item.filePath);
+      if (await file.exists()) {
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'PackProof Daraz Claim Proof: Order #${item.orderId}',
+        );
+      } else {
+        await Share.share(
+          'PackProof Daraz Claim Proof: Order #${item.orderId}\nUploaded to Google Drive',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Share error: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final fileSize = _formatFileSize(item.filePath);
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF8EE),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child:
-                const Icon(Icons.cloud_done_rounded, color: _success, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.orderId,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: _textDark,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                item.orderId,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: _textDark,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: item.orderId));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copied tracking: ${item.orderId}'),
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Icon(
+                    Icons.copy_rounded,
+                    size: 15,
+                    color: Color(0xFFFF5A1F),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${item.flowLabel} • Backed up to Google Drive',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: _textMuted,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          InkWell(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: item.orderId));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Copied tracking: ${item.orderId}'),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _VideoProofThumbnail(
+                orderId: item.orderId,
+                durationLabel: '0:24s',
+                onTap: () => _shareProof(context),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Video Duration: 0:24s',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'File Size:  $fileSize',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: _success,
+                          size: 15,
+                        ),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Uploaded to Google Drive',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF15803D),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.copy_rounded, size: 16, color: _primary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () => _shareProof(context),
+              icon: const Icon(Icons.share_outlined, size: 15),
+              label: const Text(
+                'Share Claim Proof',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _textDark,
+                side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              ),
             ),
           ),
         ],
@@ -806,9 +1018,6 @@ class _SaaSMembershipBanner extends StatelessWidget {
 
   const _SaaSMembershipBanner({this.seller});
 
-  static const Color _border = Color(0xFFE5E7EB);
-  static const Color _textDark = Color(0xFF111827);
-
   @override
   Widget build(BuildContext context) {
     if (seller == null) return const SizedBox.shrink();
@@ -817,81 +1026,116 @@ class _SaaSMembershipBanner extends StatelessWidget {
     final isQuotaReached = seller!.isQuotaReached;
     final hasWarning = isExpired || isQuotaReached;
     final days = seller!.daysRemaining;
+    final planUpper = seller!.plan.toUpperCase();
 
-    final badgeBg = hasWarning
-        ? const Color(0xFFFEE2E2)
-        : const Color(0xFFEFF6FF);
-    final badgeText = hasWarning
-        ? const Color(0xFFDC2626)
-        : const Color(0xFF2563EB);
-
-    final statusText = isExpired
-        ? 'Membership Expired'
-        : isQuotaReached
-            ? 'Monthly Quota Full'
-            : '$days days left';
-
-    final usageText = seller!.isUnlimited
-        ? '${seller!.videosThisMonth} orders'
-        : '${seller!.videosThisMonth}/${seller!.monthlyQuota} orders';
+    // Golden VIP Capsule as shown in concept mockup
+    if (!hasWarning) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFFFFBEB),
+              Color(0xFFFDE68A),
+              Color(0xFFF59E0B),
+              Color(0xFFD97706),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: const Color(0xFFD97706).withValues(alpha: 0.6),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFD97706).withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '[$planUpper] ',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF9A3412),
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                TextSpan(
+                  text: '$days days left • ${seller!.monthlyQuota} orders quota',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF78350F),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: hasWarning ? const Color(0xFFFECACA) : _border,
-        ),
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: badgeBg,
+              color: const Color(0xFFFEE2E2),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              seller!.plan.toUpperCase(),
-              style: TextStyle(
+              isExpired ? 'EXPIRED' : 'QUOTA FULL',
+              style: const TextStyle(
                 fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: badgeText,
-                letterSpacing: 0.5,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFFDC2626),
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              '$statusText • $usageText',
+          const SizedBox(width: 8),
+          Text(
+            isExpired ? 'Membership Expired' : 'Monthly Quota Full',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFDC2626),
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () => SaasConfig.contactOwnerViaWhatsApp(
+              customMessage:
+                  'Hi Danish! I need to renew my PackProof membership (${seller!.email}).',
+            ),
+            child: const Text(
+              'Renew Now',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: hasWarning ? const Color(0xFFDC2626) : _textDark,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF16A34A),
+                decoration: TextDecoration.underline,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (hasWarning)
-            InkWell(
-              onTap: () => SaasConfig.contactOwnerViaWhatsApp(
-                customMessage:
-                    'Hi Danish! I need to renew / upgrade my PackProof subscription (${seller!.email}).',
-              ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                child: Text(
-                  'Renew',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFFDC2626),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

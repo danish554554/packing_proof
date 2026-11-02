@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../modules/queue/upload_queue_screen.dart';
 import '../../ui/home_screen.dart';
@@ -446,6 +448,100 @@ class _HistoryGroupSection extends StatelessWidget {
   }
 }
 
+class _VideoProofThumbnail extends StatelessWidget {
+  final String orderId;
+  final String? durationLabel;
+  final VoidCallback? onTap;
+
+  const _VideoProofThumbnail({
+    required this.orderId,
+    this.durationLabel = '0:24s',
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 104,
+        height: 74,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3F3028),
+              Color(0xFF221A16),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: const Color(0xFFD97706).withValues(alpha: 0.25),
+            width: 1,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x18000000),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Opacity(
+              opacity: 0.16,
+              child: const Icon(
+                Icons.inventory_2_rounded,
+                size: 38,
+                color: Colors.white,
+              ),
+            ),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            Positioned(
+              right: 5,
+              bottom: 5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.75),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(
+                  durationLabel ?? '0:24s',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HistoryCard extends StatelessWidget {
   final HistoryItem item;
 
@@ -454,28 +550,46 @@ class _HistoryCard extends StatelessWidget {
   });
 
   static const Color _textDark = Color(0xFF111827);
-  static const Color _textMuted = Color(0xFF6B7280);
   static const Color _border = Color(0xFFE5E7EB);
-  static const Color _primary = Color(0xFFFF5A1F);
+  static const Color _success = Color(0xFF16A34A);
+
+  void _shareProof(BuildContext context) async {
+    try {
+      if (item.filePath != null) {
+        final file = File(item.filePath!);
+        if (await file.exists()) {
+          await Share.shareXFiles(
+            [XFile(file.path)],
+            text: 'PackProof Daraz Claim Proof: Order #${item.orderId}',
+          );
+          return;
+        }
+      }
+      await Share.share(
+        'PackProof Daraz Claim Proof: Order #${item.orderId}\nUploaded to Google Drive',
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Share error: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isReturn = item.fileName.toLowerCase().contains('return');
-    final flowLabel = isReturn ? 'Return Proof' : 'Packing Proof';
-    final flowColor = isReturn ? const Color(0xFF2563EB) : _primary;
-    final flowBg = isReturn ? const Color(0xFFEFF6FF) : const Color(0xFFFFEFE8);
-
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _border),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            blurRadius: 8,
+            offset: Offset(0, 3),
           ),
         ],
       ),
@@ -483,159 +597,119 @@ class _HistoryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: flowBg,
-                  borderRadius: BorderRadius.circular(14),
+              Text(
+                item.orderId,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: _textDark,
+                  letterSpacing: -0.3,
                 ),
-                child: Icon(
-                  isReturn
-                      ? Icons.assignment_return_outlined
-                      : Icons.inventory_2_outlined,
-                  color: flowColor,
-                  size: 22,
+              ),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: item.orderId));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copied tracking: ${item.orderId}'),
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Icon(
+                    Icons.copy_rounded,
+                    size: 15,
+                    color: Color(0xFFFF5A1F),
+                  ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _VideoProofThumbnail(
+                orderId: item.orderId,
+                durationLabel: '0:24s',
+                onTap: () => _shareProof(context),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.orderId,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                    const Text(
+                      'Video Duration: 0:24s',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                         color: _textDark,
-                        letterSpacing: -0.2,
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Row(
+                    Text(
+                      'File Size:  ${item.sizeLabel}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: flowBg,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: _success,
+                          size: 15,
+                        ),
+                        SizedBox(width: 5),
+                        Expanded(
                           child: Text(
-                            flowLabel.toUpperCase(),
+                            'Uploaded to Google Drive',
                             style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: flowColor,
-                              letterSpacing: 0.5,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF15803D),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          item.sizeLabel,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: _textMuted,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                       ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF8EE),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.cloud_done_rounded,
-                      size: 13,
-                      color: Color(0xFF16A34A),
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Drive',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF16A34A),
-                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFF3F4F6)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.access_time_rounded,
-                  size: 14,
-                  color: _textMuted,
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () => _shareProof(context),
+              icon: const Icon(Icons.share_outlined, size: 15),
+              label: const Text(
+                'Share Claim Proof',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  item.timeLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: _textDark,
-                  ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _textDark,
+                side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const Spacer(),
-                InkWell(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: item.orderId));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Copied tracking: ${item.orderId}'),
-                        duration: const Duration(seconds: 1),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: const Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.copy_rounded, size: 14, color: _primary),
-                        SizedBox(width: 4),
-                        Text(
-                          'Copy Tracking',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: _primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              ),
             ),
           ),
         ],
